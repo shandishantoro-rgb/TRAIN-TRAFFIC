@@ -748,6 +748,7 @@ function renderEmplasemen() {
 
   renderTabelEmplasemen(L);
   gambarEmplasemen(s, L);
+  TTCEmplasemenEditor.render(s, simpanOtomatis);
 }
 
 function renderTabelEmplasemen(L) {
