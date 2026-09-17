@@ -194,7 +194,11 @@ function simpanStasiun(e) {
   if (kembar) return peringatan('Kode stasiun ' + data.kode + ' sudah dipakai.');
 
   if (idx == null) proyek.prasarana.stasiun.push(data);
-  else proyek.prasarana.stasiun[idx] = data;
+  else {
+    const old = proyek.prasarana.stasiun[idx];
+    if (old.kode !== data.kode) return peringatan('Perubahan kode stasiun belum didukung karena terhubung ke petak dan jadwal. Pertahankan kode sebelumnya.');
+    proyek.prasarana.stasiun[idx] = Object.assign({}, old, data);
+  }
   peringatan(''); tutup('modal-stasiun'); renderSemua();
   toast(idx == null ? 'Stasiun ditambahkan.' : 'Stasiun diperbarui.');
 }
@@ -1236,43 +1240,7 @@ function renderKonflik() {
    PETA JALUR
    ============================================================ */
 function gambarPeta() {
-  const svg = $('network-svg');
-  const st = proyek.prasarana.stasiun;
-  $('empty-map').classList.toggle('hidden', st.length > 0);
-  svg.innerHTML = '';
-  $('peta-sub').textContent = st.length
-    ? st.length + ' stasiun · ' + proyek.prasarana.petakJalan.length + ' petak · panjang ' + num(panjangLintas(), 1) + ' km'
-    : 'Skema lintas berskala jarak.';
-  if (!st.length) return;
-
-  const NS = 'http://www.w3.org/2000/svg';
-  const mk = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
-  const minKm = Math.min(...st.map(s => Number(s.km))), maxKm = Math.max(...st.map(s => Number(s.km)));
-  const span = Math.max(maxKm - minKm, 0.001);
-  const X = km => 70 + ((Number(km) - minKm) / span) * 960;
-  const Y = i => 210 + (i % 2 === 0 ? -1 : 1) * (st.length > 12 ? 26 : 0);
-
-  proyek.prasarana.petakJalan.forEach(p => {
-    const a = st.findIndex(s => s.kode === p.dari), b = st.findIndex(s => s.kode === p.ke);
-    if (a < 0 || b < 0) return;
-    const cls = p.jenisJalur === 'Ganda' ? 'track-double' : 'track-single';
-    svg.appendChild(mk('line', { x1: X(st[a].km), y1: Y(a), x2: X(st[b].km), y2: Y(b), class: cls }));
-    if (p.jenisJalur === 'Ganda')
-      svg.appendChild(mk('line', { x1: X(st[a].km), y1: Y(a), x2: X(st[b].km), y2: Y(b), class: 'track-main' }));
-  });
-
-  st.forEach((s, i) => {
-    const x = X(s.km), y = Y(i), atas = (i % 2 === 0);
-    svg.appendChild(mk('circle', { cx: x, cy: y, r: 7,
-      class: 'station-node' + (s.jenis === 'Perhentian' ? ' perhentian' : '') }));
-    const t1 = mk('text', { x: x, y: y + (atas ? -26 : 34), 'text-anchor': 'middle', class: 'station-label' });
-    t1.textContent = s.nama;
-    const t2 = mk('text', { x: x, y: y + (atas ? -14 : 46), 'text-anchor': 'middle', class: 'station-code' });
-    t2.textContent = s.kode + ' · ' + Number(s.jumlahJalur) + ' jalur';
-    const t3 = mk('text', { x: x, y: y + (atas ? 18 : -14), 'text-anchor': 'middle', class: 'station-km' });
-    t3.textContent = 'km ' + num(s.km, 1);
-    svg.appendChild(t1); svg.appendChild(t2); svg.appendChild(t3);
-  });
+  TTCPeta.render(proyek, {save: simpanOtomatis, station: bukaModalStasiun, edge: bukaModalPetak});
 }
 
 /* ============================================================
@@ -1532,7 +1500,7 @@ function pasang() {
   $('cari-ka').oninput = renderJadwal;
 
   $('btn-gp-gambar').onclick = gambarGapeka;
-  $('btn-peta-refresh').onclick = gambarPeta;
+
   $('btn-gp-zoom-in').onclick = () => { TTCGapeka.G.pxPerJam = Math.min(1400, TTCGapeka.G.pxPerJam * 1.4); gambarGapeka(); };
   $('btn-gp-zoom-out').onclick = () => { TTCGapeka.G.pxPerJam = Math.max(70, TTCGapeka.G.pxPerJam / 1.4); gambarGapeka(); };
 
@@ -1589,3 +1557,4 @@ function mulai() {
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mulai);
 else mulai();
 })();
+

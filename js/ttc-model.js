@@ -183,6 +183,7 @@ function migrasi(data) {
   const p = proyekKosong();
   p.namaProyek = data.namaProyek || p.namaProyek;
   p.dibuat = data.dibuat || p.dibuat;
+  if (data.petaJalur) p.petaJalur = JSON.parse(JSON.stringify(data.petaJalur));
 
   if (Array.isArray(data.stasiun)) {            // versi 1
     p.prasarana.stasiun = data.stasiun;
@@ -237,3 +238,4 @@ global.TTCModel = {
   bagiBlokRata, jumlahBlok, adaBlok
 };
 })(window);
+
